@@ -22,7 +22,7 @@ char* my_getline() {
     if (len > 0 && input[len - 1] == '\n') {
         input[len - 1] = '\0';
     }
-
+    printf("%s\n", input);
     return input;
 }
 
@@ -55,24 +55,32 @@ bool isValidCard(char *card) {
 }
 
 
-bool isErrorInLine (char *str, int turn) {
-    char *token = NULL;
-    bool returnValue = false;
+bool isErrorInLine(char *str, int turn) {
+    int expectedCards = (turn == 0) ? 2 : (turn == 1 ? 3 : 1);
+    int cardCount = 0;
+    char *lineCopy = strdup(str);
+    char *token = strtok(lineCopy, " ");
+    bool hasError = false;
 
-    if ((turn == 0 && strlen(str) != TWO_CARD) || (turn == 1 && strlen(str) != THREE_CARD) || (turn == 2 && strlen(str) != ONE_CARD) || (turn == 3 && strlen(str) != ONE_CARD)) {
-        printf("Wrong number of card.\n");
-        return true;
-    }
-    token = strtok(str, " ");
     while (token != NULL) {
+        cardCount++;
         if (!isValidCard(token)) {
-            printf("%s card is not valid\n", token);
-            returnValue = true; // Une carte est invalide
+            printf("%s card is not valid.\n", token);
+            hasError = true;
         }
-        token = strtok(NULL, " "); // Passe à la carte suivante
+        token = strtok(NULL, " ");
     }
-    return returnValue;
+
+    free(lineCopy);
+
+    if (cardCount != expectedCards) {
+        printf("Wrong number of cards: expected %d, got %d.\n", expectedCards, cardCount);
+        hasError = true;
+    }
+
+    return hasError;
 }
+
 
 void errorHandling(int argc, char **argv) {
     if (argc != 2 || !isNum(argv[1])) {
@@ -85,16 +93,16 @@ void instruction(int turn) {
     switch (turn)
     {
     case 0:
-        printf("Enter your card:");
+        printf("Enter your card: ");
         break;
     case 1:
-        printf("Flop: Enter the cards:");
+        printf("Flop: Enter the cards: ");
         break;
     case 2:
-        printf("Turn: Enter new card");
+        printf("Turn: Enter new card: ");
         break;
     case 3:
-        printf("River: Enter new card");
+        printf("River: Enter new card: ");
         break;
     
     default:
@@ -102,22 +110,101 @@ void instruction(int turn) {
     }
 }
 
+void storeCards(char **cards, char *line, int turn) {
+    char *lineCopy = strdup(line); // Duplique la ligne pour ne pas la modifier
+    char *card = NULL;
+    if (!lineCopy) {
+        perror("Duplication failed");
+        exit(EXIT_FAILURE);
+    }
+
+    card = strtok(lineCopy, " ");
+    for (int i = turn; card != NULL; i++) {
+        if (i >= 6) { // Ajout de sécurité pour éviter les dépassements
+            printf("Too many cards provided.\n");
+            break;
+        }
+        strncpy(cards[i], card, 2); // Copie les deux premiers caractères (carte + couleur)
+        cards[i][2] = '\0';         // Ajoute le caractère de fin
+        card = strtok(NULL, " ");
+    }
+
+    free(lineCopy); // Libère la copie
+}
+
+
+void printCards(char **myCards, char **cards) {
+    printf("Your cards: ");
+    for (int i = 0; myCards[i] != NULL; i++) {
+        printf("%s", myCards[i]);
+    }
+    printf("\n");
+    printf("table cards: ");
+    for (int i = 0; cards[i] != NULL; i++) {
+        printf("%s", cards[i]);
+    }
+    printf("\n");
+}
+
+char **initArray(int rows, int cols) {
+    char **array = malloc(sizeof(char *) * rows); // Alloue un tableau de pointeurs
+    if (!array) {
+        perror("Allocation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < rows; i++) {
+        array[i] = malloc(sizeof(char) * cols); // Alloue chaque ligne
+        if (!array[i]) {
+            perror("Allocation failed");
+            exit(EXIT_FAILURE);
+        }
+        memset(array[i], '\0', sizeof(char) * cols); // Initialise à '\0'
+    }
+    return array; // Plus de `array[rows] = NULL`
+}
+
 int main(int argc, char **argv) {
     char *line = NULL;
+    char **myCards = initArray(2, 3); // 2 cartes pour le joueur
+    char **cards = initArray(5, 3);  // Jusqu'à 5 cartes pour la table
 
     errorHandling(argc, argv);
-    for (int turn = 0 ; turn != 5; turn++) {
-        if (turn == 4)
-            turn = 0;
+    for (int turn = 0; turn < 5; turn++) {
+        if (turn == 4) {
+            printf("End of the game.\nStarting new game...\n");
+            turn = -1; // Recommence le jeu
+            continue;
+        }
+
         instruction(turn);
         line = my_getline();
+
         if (isErrorInLine(line, turn)) {
             turn--;
             continue;
-        };
+        }
 
+        if (turn == 0) {
+            storeCards(myCards, line, 0);
+        } else {
+            storeCards(cards, line, turn == 1 ? 0 : (turn == 2 ? 3 : 4));
+        }
+        printCards(myCards, cards);
+
+        free(line);
     }
+
+    // Libération de la mémoire
+    for (int i = 0; i < 2; i++) free(myCards[i]);
+    free(myCards);
+
+    for (int i = 0; i < 5; i++) free(cards[i]);
+    free(cards);
+
+    return 0;
 }
+
 
 // turn 0 = Init game ; asking for player card
 // turn 1 = asking for flop
