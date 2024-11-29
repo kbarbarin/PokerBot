@@ -132,36 +132,80 @@ void storeCards(char **cards, char *line, int turn) {
     free(lineCopy); // Libère la copie
 }
 
-
-void printCards(char **myCards, char **cards) {
-    printf("Your cards: ");
-    for (int i = 0; myCards[i] != NULL; i++) {
-        printf("%s", myCards[i]);
+void prettyPrintCard(const char *card) {
+    // Vérifie que la carte est valide
+    if (strlen(card) < 2 || strlen(card) > 3) {
+        printf("%s", card);
+        return;
     }
-    printf("\n");
-    printf("table cards: ");
+
+    // Affiche la valeur
+    for (size_t i = 0; i < strlen(card) - 1; i++) {
+        putchar(card[i]);
+    }
+
+    // Affiche l'émoji correspondant à la couleur
+    char suit = card[strlen(card) - 1];
+    switch (suit) {
+        case 'H':
+            printf("❤️");
+            break;
+        case 'D':
+            printf("♦️");
+            break;
+        case 'C':
+            printf("♣️");
+            break;
+        case 'S':
+            printf("♠️");
+            break;
+        default:
+            putchar(suit); // Si la couleur n'est pas reconnue
+            break;
+    }
+}
+
+void prettyPrintCards(char **cards) {
     for (int i = 0; cards[i] != NULL; i++) {
-        printf("%s", cards[i]);
+        prettyPrintCard(cards[i]);
+        if (cards[i + 1] != NULL) {
+            printf(" ");
+        }
     }
     printf("\n");
 }
 
+void printCards(char **myCards, char **cards) {
+    printf("Your cards: ");
+    prettyPrintCards(myCards);
+    printf("\n");
+    printf("table cards: ");
+    prettyPrintCards(cards);
+    printf("\n");
+}
+
 char **initArray(int rows, int cols) {
-    char **array = malloc(sizeof(char *) * rows); // Alloue un tableau de pointeurs
+    // Allocation de mémoire pour rows + 1 (pour le NULL final)
+    char **array = malloc(sizeof(char *) * (rows + 1));
     if (!array) {
         perror("Allocation failed");
         exit(EXIT_FAILURE);
     }
 
+    // Allocation de chaque sous-tableau
     for (int i = 0; i < rows; i++) {
-        array[i] = malloc(sizeof(char) * cols); // Alloue chaque ligne
+        array[i] = malloc(sizeof(char) * cols);
         if (!array[i]) {
             perror("Allocation failed");
             exit(EXIT_FAILURE);
         }
-        memset(array[i], '\0', sizeof(char) * cols); // Initialise à '\0'
+        memset(array[i], '\0', cols);
     }
-    return array; // Plus de `array[rows] = NULL`
+
+    // Ajout du NULL final pour les fonctions dépendant de NULL
+    array[rows] = NULL;
+
+    return array;
 }
 
 int main(int argc, char **argv) {
