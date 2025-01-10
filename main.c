@@ -2,8 +2,20 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "poker.h"
 
+#define BUFFER_SIZE 256
+
+// Tableau contenant toutes les cartes possibles
+const char *ALL_CARDS[] = {
+    "2H", "2D", "2C", "2S", "3H", "3D", "3C", "3S", "4H", "4D", "4C", "4S",
+    "5H", "5D", "5C", "5S", "6H", "6D", "6C", "6S", "7H", "7D", "7C", "7S",
+    "8H", "8D", "8C", "8S", "9H", "9D", "9C", "9S", "TH", "TD", "TC", "TS",
+    "JH", "JD", "JC", "JS", "QH", "QD", "QC", "QS", "KH", "KD", "KC", "KS",
+    "AH", "AD", "AC", "AS"
+};
+const int TOTAL_CARDS = 52;
+
+// Lecture de l'entrée utilisateur
 char* my_getline() {
     char *input = malloc(BUFFER_SIZE);
     if (!input) {
@@ -17,15 +29,14 @@ char* my_getline() {
         exit(EXIT_FAILURE);
     }
 
-    // Supprime le saut de ligne s'il est présent
     size_t len = strlen(input);
     if (len > 0 && input[len - 1] == '\n') {
         input[len - 1] = '\0';
     }
-    printf("%s\n", input);
     return input;
 }
 
+// Vérification si une chaîne est un nombre
 bool isNum(const char *str) {
     for (int i = 0; str[i] != '\0'; i++)
         if (str[i] < '0' || str[i] > '9')
@@ -33,28 +44,23 @@ bool isNum(const char *str) {
     return true;
 }
 
+// Vérifie si une carte est valide
 bool isValidCard(char *card) {
-    // Vérifie que la carte est d'une longueur correcte (2 ou 3 caractères)
     size_t len = strlen(card);
     if (len < 2 || len > 3) return false;
-
-    // Vérifie la valeur de la carte
     char value = card[0];
-    if (!(value == 'A' || value == 'K' || value == 'Q' || value == 'J' || value == 'T' ||
+    if (!(value == 'A' || value == 'K' || value == 'Q' || value == 'J' || value == 'T' || 
           (value >= '2' && value <= '9'))) {
             return false;
     }
-
-    // Vérifie la couleur de la carte (H, D, C, S)
     char suit = card[len - 1];
     if (!(suit == 'H' || suit == 'D' || suit == 'C' || suit == 'S')) {
         return false;
     }
-
     return true;
 }
 
-
+// Vérifie les erreurs dans une ligne de cartes
 bool isErrorInLine(char *str, int turn) {
     int expectedCards = (turn == 0) ? 2 : (turn == 1 ? 3 : 1);
     int cardCount = 0;
@@ -70,162 +76,136 @@ bool isErrorInLine(char *str, int turn) {
         }
         token = strtok(NULL, " ");
     }
-
     free(lineCopy);
 
     if (cardCount != expectedCards) {
         printf("Wrong number of cards: expected %d, got %d.\n", expectedCards, cardCount);
         hasError = true;
     }
-
     return hasError;
 }
 
-
-void errorHandling(int argc, char **argv) {
-    if (argc != 2 || !isNum(argv[1])) {
-        printf("You need to use 1 argument.");
-        exit(84);
-    }
-}
-
+// Affiche les instructions pour chaque étape
 void instruction(int turn) {
-    switch (turn)
-    {
+    switch (turn) {
     case 0:
-        printf("Enter your card: ");
+        printf("Enter your cards (2 cards): ");
         break;
     case 1:
-        printf("Flop: Enter the cards: ");
+        printf("Enter the Flop (3 cards): ");
         break;
     case 2:
-        printf("Turn: Enter new card: ");
+        printf("Enter the Turn (1 card): ");
         break;
     case 3:
-        printf("River: Enter new card: ");
+        printf("Enter the River (1 card): ");
         break;
-    
     default:
         break;
     }
 }
 
-void storeCards(char **cards, char *line, int turn) {
-    char *lineCopy = strdup(line); // Duplique la ligne pour ne pas la modifier
-    char *card = NULL;
-    if (!lineCopy) {
-        perror("Duplication failed");
-        exit(EXIT_FAILURE);
-    }
-
-    card = strtok(lineCopy, " ");
-    for (int i = turn; card != NULL; i++) {
-        if (i >= 6) { // Ajout de sécurité pour éviter les dépassements
-            printf("Too many cards provided.\n");
-            break;
-        }
-        strncpy(cards[i], card, 2); // Copie les deux premiers caractères (carte + couleur)
-        cards[i][2] = '\0';         // Ajoute le caractère de fin
+// Stocke les cartes fournies par l'utilisateur
+void storeCards(char **cards, char *line, int startIndex) {
+    char *lineCopy = strdup(line);
+    char *card = strtok(lineCopy, " ");
+    for (int i = startIndex; card != NULL; i++) {
+        strncpy(cards[i], card, 2);
+        cards[i][2] = '\0';
         card = strtok(NULL, " ");
     }
-
-    free(lineCopy); // Libère la copie
+    free(lineCopy);
 }
 
-void prettyPrintCard(const char *card) {
-    // Vérifie que la carte est valide
-    if (strlen(card) < 2 || strlen(card) > 3) {
-        printf("%s", card);
-        return;
-    }
-
-    // Affiche la valeur
-    for (size_t i = 0; i < strlen(card) - 1; i++) {
-        putchar(card[i]);
-    }
-
-    // Affiche l'émoji correspondant à la couleur
-    char suit = card[strlen(card) - 1];
-    switch (suit) {
-        case 'H':
-            printf("❤️");
-            break;
-        case 'D':
-            printf("♦️");
-            break;
-        case 'C':
-            printf("♣️");
-            break;
-        case 'S':
-            printf("♠️");
-            break;
-        default:
-            putchar(suit); // Si la couleur n'est pas reconnue
-            break;
-    }
-}
-
-void prettyPrintCards(char **cards) {
-    for (int i = 0; cards[i] != NULL; i++) {
-        prettyPrintCard(cards[i]);
-        if (cards[i + 1] != NULL) {
-            printf(" ");
-        }
-    }
-    printf("\n");
-}
-
-void printCards(char **myCards, char **cards) {
-    printf("Your cards: ");
-    prettyPrintCards(myCards);
-    printf("\n");
-    printf("table cards: ");
-    prettyPrintCards(cards);
-    printf("\n");
-}
-
+// Initialisation d'un tableau dynamique
 char **initArray(int rows, int cols) {
-    // Allocation de mémoire pour rows + 1 (pour le NULL final)
     char **array = malloc(sizeof(char *) * (rows + 1));
-    if (!array) {
-        perror("Allocation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    // Allocation de chaque sous-tableau
     for (int i = 0; i < rows; i++) {
         array[i] = malloc(sizeof(char) * cols);
-        if (!array[i]) {
-            perror("Allocation failed");
-            exit(EXIT_FAILURE);
-        }
         memset(array[i], '\0', cols);
     }
-
-    // Ajout du NULL final pour les fonctions dépendant de NULL
     array[rows] = NULL;
-
     return array;
 }
 
-int main(int argc, char **argv) {
-    char *line = NULL;
-    char **myCards = initArray(2, 3); // 2 cartes pour le joueur
-    char **cards = initArray(5, 3);  // Jusqu'à 5 cartes pour la table
+// Vérifie si une carte est utilisée
+bool isCardUsed(const char *card, char **myCards, char **tableCards) {
+    for (int i = 0; myCards[i] != NULL; i++) {
+        if (strcmp(myCards[i], card) == 0) return true;
+    }
+    for (int i = 0; tableCards[i] != NULL; i++) {
+        if (strcmp(tableCards[i], card) == 0) return true;
+    }
+    return false;
+}
 
-    errorHandling(argc, argv);
-    for (int turn = 0; turn < 5; turn++) {
-        if (turn == 4) {
-            printf("End of the game.\nStarting new game...\n");
-            turn = -1; // Recommence le jeu
-            continue;
+// Génère les cartes restantes
+char **generateRemainingDeck(char **myCards, char **tableCards, int *remainingCount) {
+    char **remainingDeck = malloc(sizeof(char *) * (TOTAL_CARDS + 1));
+    int index = 0;
+
+    for (int i = 0; i < TOTAL_CARDS; i++) {
+        printf("%d < 52\n", i);
+        if (!isCardUsed(ALL_CARDS[i], myCards, tableCards)) {
+            remainingDeck[index] = strdup(ALL_CARDS[i]);
+            index++;
         }
+    }
+    remainingDeck[index] = NULL;
+    *remainingCount = index;
+    return remainingDeck;
+}
 
+// Évalue une main (simplifié)
+int evaluateHand(char **cards) {
+    (void)cards;
+    return 0; // Toujours carte haute dans cette version
+}
+
+// Simule les adversaires et compare les mains
+void simulateOpponents(char **myCards, char **tableCards, char **remainingDeck, int remainingCount, int numPlayers) {
+    int wins = 0, losses = 0;
+    (void)tableCards;   // Évite le warning
+    (void)numPlayers;
+
+    for (int i = 0; i < remainingCount; i++) {
+        for (int j = i + 1; j < remainingCount; j++) {
+            char *opponentHand[] = { remainingDeck[i], remainingDeck[j], NULL };
+            int opponentScore = evaluateHand(opponentHand);
+            int playerScore = evaluateHand(myCards);
+
+            if (playerScore > opponentScore) {
+                wins++;
+            } else {
+                losses++;
+            }
+        }
+    }
+
+    printf("Wins: %d, Losses: %d\n", wins, losses);
+}
+
+
+
+// Fonction principale
+int main(int argc, char **argv) {
+    if (argc != 2 || !isNum(argv[1])) {
+        printf("Usage: %s <number_of_players>\n", argv[0]);
+        return 1;
+    }
+
+    char **myCards = initArray(2, 3);
+    char **cards = initArray(5, 3);
+    int numPlayers = atoi(argv[1]);
+
+    for (int turn = 0; turn < 4; turn++) {
         instruction(turn);
-        line = my_getline();
+        char *line = my_getline();
 
         if (isErrorInLine(line, turn)) {
+            printf("Invalid input, please try again.\n");
             turn--;
+            free(line);
             continue;
         }
 
@@ -234,24 +214,19 @@ int main(int argc, char **argv) {
         } else {
             storeCards(cards, line, turn == 1 ? 0 : (turn == 2 ? 3 : 4));
         }
-        printCards(myCards, cards);
-
         free(line);
     }
+    printf("Simulation part begin\n");
+    int remainingCount = 0;
+    char **remainingDeck = generateRemainingDeck(myCards, cards, &remainingCount);
+    simulateOpponents(myCards, cards, remainingDeck, remainingCount, numPlayers);
 
-    // Libération de la mémoire
     for (int i = 0; i < 2; i++) free(myCards[i]);
     free(myCards);
-
     for (int i = 0; i < 5; i++) free(cards[i]);
     free(cards);
+    for (int i = 0; i < remainingCount; i++) free(remainingDeck[i]);
+    free(remainingDeck);
 
     return 0;
 }
-
-
-// turn 0 = Init game ; asking for player card
-// turn 1 = asking for flop
-// turn 2 = asking for turn
-// turn 3 = asking for river
-// turn 5 = quiting game
