@@ -185,7 +185,153 @@ void simulateOpponents(char **myCards, char **tableCards, char **remainingDeck, 
     printf("Wins: %d, Losses: %d\n", wins, losses);
 }
 
+bool isPair(char **playerCard, char **cards) {
+    for (int i = 0; playerCard[i] != NULL; i++) {
+        for (int j = 0; cards[j] != NULL; j++) {
+            if (playerCard[i][0] ==cards[j][0]) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
+bool isDoublePair(char **playerCard, char **cards) {
+    int howManyPair = 0;
+    
+    for (int i = 0; playerCard[i] != NULL; i++) {
+        for (int j = 0; cards[j] != NULL; j++) {
+            if (playerCard[i][0] ==cards[j][0]) {
+                howManyPair++;
+            }
+        }
+    }
+    if (howManyPair > 1)
+        return true;
+    return false;
+}
+
+bool isThreeOfAKind(char **playerCard, char **cards) {
+    int cardCount[13] = {0};
+
+    for (int i = 0; playerCard[i] != NULL; i++) {
+        int index = (playerCard[i][0] >= '2' && playerCard[i][0] <= '9') ? playerCard[i][0] - '2' : 
+                    (playerCard[i][0] == 'T') ? 8 :
+                    (playerCard[i][0] == 'J') ? 9 :
+                    (playerCard[i][0] == 'Q') ? 10 :
+                    (playerCard[i][0] == 'K') ? 11 : 12;
+        cardCount[index]++;
+    }
+
+    for (int j = 0; cards[j] != NULL; j++) {
+        int index = (cards[j][0] >= '2' && cards[j][0] <= '9') ? cards[j][0] - '2' : 
+                    (cards[j][0] == 'T') ? 8 :
+                    (cards[j][0] == 'J') ? 9 :
+                    (cards[j][0] == 'Q') ? 10 :
+                    (cards[j][0] == 'K') ? 11 : 12;
+        cardCount[index]++;
+    }
+
+    for (int k = 0; k < 13; k++) {
+        if (cardCount[k] == 3) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isStraight(char **playerCard, char **cards) {
+    int cardCount[13] = {0};
+    int consecutive = 0;
+
+    for (int i = 0; playerCard[i] != NULL; i++) {
+        int index = (playerCard[i][0] >= '2' && playerCard[i][0] <= '9') ? playerCard[i][0] - '2' : 
+                    (playerCard[i][0] == 'T') ? 8 :
+                    (playerCard[i][0] == 'J') ? 9 :
+                    (playerCard[i][0] == 'Q') ? 10 :
+                    (playerCard[i][0] == 'K') ? 11 : 12;
+        cardCount[index]++;
+    }
+
+    for (int j = 0; cards[j] != NULL; j++) {
+        int index = (cards[j][0] >= '2' && cards[j][0] <= '9') ? cards[j][0] - '2' : 
+                    (cards[j][0] == 'T') ? 8 :
+                    (cards[j][0] == 'J') ? 9 :
+                    (cards[j][0] == 'Q') ? 10 :
+                    (cards[j][0] == 'K') ? 11 : 12;
+        cardCount[index]++;
+    }
+
+    for (int k = 0; k < 13; k++) {
+        if (cardCount[k] > 0) {
+            consecutive++;
+            if (consecutive == 5) return true;
+        } else {
+            consecutive = 0;
+        }
+    }
+    return false;
+}
+
+bool isFlush(char **playerCard, char **cards) {
+    int suitCount[4] = {0}; // 0: Hearts, 1: Diamonds, 2: Clubs, 3: Spades
+
+    for (int i = 0; playerCard[i] != NULL; i++) {
+        char suit = playerCard[i][1];
+        int index = (suit == 'H') ? 0 : (suit == 'D') ? 1 : (suit == 'C') ? 2 : 3;
+        suitCount[index]++;
+    }
+
+    for (int j = 0; cards[j] != NULL; j++) {
+        char suit = cards[j][1];
+        int index = (suit == 'H') ? 0 : (suit == 'D') ? 1 : (suit == 'C') ? 2 : 3;
+        suitCount[index]++;
+    }
+
+    for (int k = 0; k < 4; k++) {
+        if (suitCount[k] >= 5) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isFullHouse(char **playerCard, char **cards) {
+    return isThreeOfAKind(playerCard, cards) && isDoublePair(playerCard, cards);
+}
+
+bool isFourOfAKind(char **playerCard, char **cards) {
+    int cardCount[13] = {0};
+
+    for (int i = 0; playerCard[i] != NULL; i++) {
+        int index = (playerCard[i][0] >= '2' && playerCard[i][0] <= '9') ? playerCard[i][0] - '2' : 
+                    (playerCard[i][0] == 'T') ? 8 :
+                    (playerCard[i][0] == 'J') ? 9 :
+                    (playerCard[i][0] == 'Q') ? 10 :
+                    (playerCard[i][0] == 'K') ? 11 : 12;
+        cardCount[index]++;
+    }
+
+    for (int j = 0; cards[j] != NULL; j++) {
+        int index = (cards[j][0] >= '2' && cards[j][0] <= '9') ? cards[j][0] - '2' : 
+                    (cards[j][0] == 'T') ? 8 :
+                    (cards[j][0] == 'J') ? 9 :
+                    (cards[j][0] == 'Q') ? 10 :
+                    (cards[j][0] == 'K') ? 11 : 12;
+        cardCount[index]++;
+    }
+
+    for (int k = 0; k < 13; k++) {
+        if (cardCount[k] == 4) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isStraightFlush(char **playerCard, char **cards) {
+    return isStraight(playerCard, cards) && isFlush(playerCard, cards);
+}
 
 // Fonction principale
 int main(int argc, char **argv) {
@@ -216,17 +362,17 @@ int main(int argc, char **argv) {
         }
         free(line);
     }
-    printf("Simulation part begin\n");
-    int remainingCount = 0;
-    char **remainingDeck = generateRemainingDeck(myCards, cards, &remainingCount);
-    simulateOpponents(myCards, cards, remainingDeck, remainingCount, numPlayers);
+//    printf("Simulation part begin\n");
+//    int remainingCount = 0;
+//    char **remainingDeck = generateRemainingDeck(myCards, cards, &remainingCount);
+//    simulateOpponents(myCards, cards, remainingDeck, remainingCount, numPlayers);
 
     for (int i = 0; i < 2; i++) free(myCards[i]);
     free(myCards);
     for (int i = 0; i < 5; i++) free(cards[i]);
     free(cards);
-    for (int i = 0; i < remainingCount; i++) free(remainingDeck[i]);
-    free(remainingDeck);
+//    for (int i = 0; i < remainingCount; i++) free(remainingDeck[i]);
+//    free(remainingDeck);
 
     return 0;
 }
