@@ -6,14 +6,14 @@
 #define BUFFER_SIZE 256
 
 // Tableau contenant toutes les cartes possibles
-const char *ALL_CARDS[] = {
+const int TOTAL_CARDS = 52;
+const char *ALL_CARDS[TOTAL_CARDS] = {
     "2H", "2D", "2C", "2S", "3H", "3D", "3C", "3S", "4H", "4D", "4C", "4S",
     "5H", "5D", "5C", "5S", "6H", "6D", "6C", "6S", "7H", "7D", "7C", "7S",
     "8H", "8D", "8C", "8S", "9H", "9D", "9C", "9S", "TH", "TD", "TC", "TS",
     "JH", "JD", "JC", "JS", "QH", "QD", "QC", "QS", "KH", "KD", "KC", "KS",
     "AH", "AD", "AC", "AS"
 };
-const int TOTAL_CARDS = 52;
 
 // Lecture de l'entrée utilisateur
 char* my_getline() {
@@ -333,6 +333,46 @@ bool isStraightFlush(char **playerCard, char **cards) {
     return isStraight(playerCard, cards) && isFlush(playerCard, cards);
 }
 
+// Fonction pour vérifier si une carte est utilisée
+    bool isThisCardUsed(const char *card, char **usedCards) {
+        for (int i = 0; usedCards[i] != NULL; i++) {
+            if (strcmp(card, usedCards[i]) == 0) {
+                return true; // La carte est utilisée
+            }
+        }
+        return false; // La carte n'est pas utilisée
+    }
+
+char **getRestCard(char **playerCard, char **cards) {
+    // Allocation dynamique pour restCard
+    char **restCard = malloc(sizeof(char *) * (TOTAL_CARDS + 1)); // +1 pour le NULL terminal
+    int restIndex = 0;
+
+    // Parcourir toutes les cartes du jeu
+    for (int i = 0; i < TOTAL_CARDS; i++) {
+        if (!isThisCardUsed(ALL_CARDS[i], playerCard) && !isThisCardUsed(ALL_CARDS[i], cards)) {
+            // Ajouter les cartes restantes à restCard
+            restCard[restIndex] = malloc(sizeof(char) * 3); // 2 caractères + '\0'
+            strcpy(restCard[restIndex], ALL_CARDS[i]);
+            restIndex++;
+        }
+    }
+
+    // Ajouter le NULL terminal
+    restCard[restIndex] = NULL;
+
+    return restCard;
+}
+
+char **generateCombinaison(char **playerCard, char **cards) {
+    char **restCard = getRestCard(playerCard, cards);
+    for (int i = 0; restCard[i] != NULL; i++) {
+        printf("%s ", restCard[i]);
+    }
+    printf("\n");
+    return restCard;
+}
+
 // Fonction principale
 int main(int argc, char **argv) {
     if (argc != 2 || !isNum(argv[1])) {
@@ -343,6 +383,7 @@ int main(int argc, char **argv) {
     char **myCards = initArray(2, 3);
     char **cards = initArray(5, 3);
     int numPlayers = atoi(argv[1]);
+    (void)numPlayers; // avoid warning
 
     for (int turn = 0; turn < 4; turn++) {
         instruction(turn);
@@ -360,6 +401,7 @@ int main(int argc, char **argv) {
         } else {
             storeCards(cards, line, turn == 1 ? 0 : (turn == 2 ? 3 : 4));
         }
+        generateCombinaison(myCards, cards);
         free(line);
     }
 //    printf("Simulation part begin\n");
