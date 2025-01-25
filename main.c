@@ -14,6 +14,16 @@ const char *ALL_CARDS[TOTAL_CARDS] = {
     "JH", "JD", "JC", "JS", "QH", "QD", "QC", "QS", "KH", "KD", "KC", "KS",
     "AH", "AD", "AC", "AS"
 };
+bool isPair(char **, char **);
+bool isDoublePair(char **, char **);
+bool isThreeOfAKind(char **, char **);
+bool isStraight(char **, char **);
+bool isFlush(char **, char **);
+bool isFullHouse(char **, char **);
+bool isFourOfAKind(char **, char **);
+bool isStraightFlush(char **, char **);
+
+bool (*checkCombinaisons[8])(char **playerCard, char **cards) = {isPair, isDoublePair, isThreeOfAKind, isStraight, isFlush, isFullHouse, isFourOfAKind, isStraightFlush };
 
 // Lecture de l'entrée utilisateur
 char* my_getline() {
@@ -160,29 +170,6 @@ char **generateRemainingDeck(char **myCards, char **tableCards, int *remainingCo
 int evaluateHand(char **cards) {
     (void)cards;
     return 0; // Toujours carte haute dans cette version
-}
-
-// Simule les adversaires et compare les mains
-void simulateOpponents(char **myCards, char **tableCards, char **remainingDeck, int remainingCount, int numPlayers) {
-    int wins = 0, losses = 0;
-    (void)tableCards;   // Évite le warning
-    (void)numPlayers;
-
-    for (int i = 0; i < remainingCount; i++) {
-        for (int j = i + 1; j < remainingCount; j++) {
-            char *opponentHand[] = { remainingDeck[i], remainingDeck[j], NULL };
-            int opponentScore = evaluateHand(opponentHand);
-            int playerScore = evaluateHand(myCards);
-
-            if (playerScore > opponentScore) {
-                wins++;
-            } else {
-                losses++;
-            }
-        }
-    }
-
-    printf("Wins: %d, Losses: %d\n", wins, losses);
 }
 
 bool isPair(char **playerCard, char **cards) {
@@ -364,13 +351,79 @@ char **getRestCard(char **playerCard, char **cards) {
     return restCard;
 }
 
-char **generateCombinaison(char **playerCard, char **cards) {
-    char **restCard = getRestCard(playerCard, cards);
-    for (int i = 0; restCard[i] != NULL; i++) {
-        printf("%s ", restCard[i]);
+void simulateOpponents(int playerScore, char **restCard, char **cards) {
+    bool buff = false;
+    int wins = 0;
+    int losses = 0;
+    int equity = 0;
+    int countCardOne = 0;
+    int countCardTwo = 0;
+    char **opponentCards = initArray(2, 3);
+
+    for (;  restCard[countCardOne] != NULL; countCardOne++) {
+        for (countCardTwo = countCardOne;  restCard[countCardOne] != NULL; countCardTwo++) {
+            printf("here\n");
+            strcpy(opponentCards[0], restCard[countCardOne]);
+            strcpy(opponentCards[1], restCard[countCardTwo]);
+            for(int k = 7; k != playerScore - 1; k--) {
+                if (checkCombinaisons[k](restCard, cards)) {
+                    wins++;
+                    buff = true;
+                }
+            }
+            if (buff == false) {
+                if (checkCombinaisons[playerScore - 1](restCard, cards))
+                    equity++;
+                else
+                    losses++;
+            } else {
+                buff = false;
+            }
+        }
     }
-    printf("\n");
-    return restCard;
+    printf("Wins: %d, Losses: %d, Equity: %d\n", wins, losses, equity);
+
+}
+
+int *generateCombinaison(char **playerCard, char **cards) {
+    int possiblesResult = 0;
+    int *possibleHands = malloc(sizeof(int) * 9);
+    char **restCard = getRestCard(playerCard, cards);
+
+    if (isStraightFlush(restCard, cards)) {
+        possibleHands[possiblesResult] = 8;
+        possiblesResult++;
+    }
+    if (isFourOfAKind(restCard, cards)) {
+        possibleHands[possiblesResult] = 7;
+        possiblesResult++;
+    }
+    if (isFullHouse(restCard, cards)) {
+        possibleHands[possiblesResult] = 6;
+        possiblesResult++;
+    }
+    if (isFlush(restCard, cards)) {
+        possibleHands[possiblesResult] = 5;
+        possiblesResult++;
+    }
+    if (isStraight(restCard, cards)) {
+        possibleHands[possiblesResult] = 4;
+        possiblesResult++;
+    }
+    if (isThreeOfAKind(restCard, cards)) {
+        possibleHands[possiblesResult] = 3;
+        possiblesResult++;
+    }
+    if (isDoublePair(restCard, cards)) {
+        possibleHands[possiblesResult] = 2;
+        possiblesResult++;
+    }
+    if (isPair(restCard, cards)) {
+        possibleHands[possiblesResult] = 1;
+        possiblesResult++;
+    }
+    possibleHands[possiblesResult] = -1;
+    return possibleHands;
 }
 
 // Fonction principale
@@ -382,6 +435,7 @@ int main(int argc, char **argv) {
 
     char **myCards = initArray(2, 3);
     char **cards = initArray(5, 3);
+//    int *possibleHands;
     int numPlayers = atoi(argv[1]);
     (void)numPlayers; // avoid warning
 
@@ -400,21 +454,34 @@ int main(int argc, char **argv) {
             storeCards(myCards, line, 0);
         } else {
             storeCards(cards, line, turn == 1 ? 0 : (turn == 2 ? 3 : 4));
+            simulateOpponents(3, getRestCard(myCards, cards), cards);
+            // possibleHands = generateCombinaison(myCards, cards);
+            // for (int i = 0; possibleHands[i] != -1;i++) {
+            //     if (possibleHands[i] == 8)
+            //         printf("possible Straight Flush\n");
+            //     if (possibleHands[i] == 7)
+            //         printf("possible Four Of A Kind\n");
+            //     if (possibleHands[i] == 6)
+            //         printf("possible Full House\n");
+            //     if (possibleHands[i] == 5)
+            //         printf("possible Flush\n");
+            //     if (possibleHands[i] == 4)
+            //         printf("possible Straight\n");
+            //     if (possibleHands[i] == 3)
+            //         printf("possible Three Of A Kind\n");
+            //     if (possibleHands[i] == 2)
+            //         printf("possible  Double Pair\n");
+            //     if (possibleHands[i] == 1)
+            //         printf("possible Pair\n");
+            // }
         }
-        generateCombinaison(myCards, cards);
         free(line);
     }
-//    printf("Simulation part begin\n");
-//    int remainingCount = 0;
-//    char **remainingDeck = generateRemainingDeck(myCards, cards, &remainingCount);
-//    simulateOpponents(myCards, cards, remainingDeck, remainingCount, numPlayers);
 
     for (int i = 0; i < 2; i++) free(myCards[i]);
     free(myCards);
     for (int i = 0; i < 5; i++) free(cards[i]);
     free(cards);
-//    for (int i = 0; i < remainingCount; i++) free(remainingDeck[i]);
-//    free(remainingDeck);
 
     return 0;
 }
